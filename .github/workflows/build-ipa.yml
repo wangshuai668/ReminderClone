@@ -1,0 +1,74 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:          # 手动触发
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 安装 XcodeGen
+        run: |
+          brew install xcodegen
+          cd ReminderClone
+          xcodegen generate
+          echo "✅ 项目已生成"
+
+      - name: 🔨 Archive 打包
+        run: |
+          cd ReminderClone
+          xcodebuild archive \
+            -project ReminderClone.xcodeproj \
+            -scheme ReminderClone \
+            -configuration Debug \
+            -sdk iphoneos \
+            -archivePath Build/ReminderClone.xcarchive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=${{ secrets.DEV_TEAM_ID }} \
+            -allowProvisioningUpdates
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+
+      - name: 📦 导出 .ipa
+        run: |
+          cd ReminderClone
+          mkdir -p Export
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>teamID</key>
+            <string>${{ secrets.DEV_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath Build/ReminderClone.xcarchive \
+            -exportPath Export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+
+      - name: 📤 上传 .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReminderClone-IPA
+          path: ReminderClone/Export/*.ipa
+          if-no-files-found: error

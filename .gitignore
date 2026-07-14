@@ -1,0 +1,17 @@
+# Xcode
+*.xcodeproj
+*.xcworkspace
+Build/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# SwiftPM
+.build/
+Package.resolved
+
+# IPA & Archive
+*.ipa
+*.xcarchive
+Export/
