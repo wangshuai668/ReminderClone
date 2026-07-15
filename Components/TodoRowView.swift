@@ -68,7 +68,7 @@ struct TodoRowView: View {
             
             Spacer()
             
-            if item.notes?.isEmpty == false {
+            if !item.notes.isEmpty {
                 Image(systemName: "note.text")
                     .font(.caption)
                     .foregroundStyle(.tertiary)

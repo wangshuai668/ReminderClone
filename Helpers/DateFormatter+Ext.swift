@@ -21,7 +21,7 @@ extension Calendar {
     /// 开始和结束日的日期区间
     func dayRange(for date: Date) -> (start: Date, end: Date) {
         let start = startOfDay(for: date)
-        let end = date(byAdding: .day, value: 1, to: start)!
+        let end = self.date(byAdding: .day, value: 1, to: start)!
         return (start, end)
     }
 }

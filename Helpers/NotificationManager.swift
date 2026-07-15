@@ -41,8 +41,9 @@ final class NotificationManager: ObservableObject {
         content.body = item.title
         content.sound = .default
         
-        if let notes = item.notes?.trimmingCharacters(in: .whitespaces), !notes.isEmpty {
-            content.body = "\(item.title) — \(notes)"
+        let trimmedNotes = item.notes.trimmingCharacters(in: .whitespaces)
+        if !trimmedNotes.isEmpty {
+            content.body = "\(item.title) — \(trimmedNotes)"
         }
         
         // 计算触发时间
