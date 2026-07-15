@@ -6,7 +6,7 @@ struct ReminderCloneApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     let container: ModelContainer = {
-        let schema = Schema([TodoList.self, TodoItem.self, Tag.self])
+        let schema = Schema([TodoList.self, TodoItem.self, Tag.self, JournalEntry.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
             return try ModelContainer(for: schema, configurations: config)

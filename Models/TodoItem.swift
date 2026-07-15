@@ -21,13 +21,22 @@ final class TodoItem {
     var createdAt: Date
     var completedAt: Date?
     var sortOrder: Int
-    var repeatType: String          // RepeatType rawValue
-    var repeatEndDate: Date?        // 重复截止日期
+    var repeatType: String
+    var repeatEndDate: Date?
+    
+    /// 独立提醒（与截止日期分开）
+    var reminderEnabled: Bool
+    var reminderHour: Int       // 0-23
+    var reminderMinute: Int     // 0-59
     
     var list: TodoList?
     
     @Relationship(deleteRule: .nullify)
     var tags: [Tag]
+    
+    /// 日志条目
+    @Relationship(deleteRule: .cascade)
+    var journalEntries: [JournalEntry] = []
     
     var repeatTypeEnum: RepeatType {
         get { RepeatType(rawValue: repeatType) ?? .none }
@@ -39,15 +48,13 @@ final class TodoItem {
         isCompleted = true
         completedAt = Date()
         
-        // 取消通知（切到主线程）
+        // 取消通知
         Task { @MainActor in
             NotificationManager.shared.cancelNotification(for: self)
         }
         
         // 如果是重复事项，创建下一周期副本
         guard repeatTypeEnum != .none, let due = dueDate else { return }
-        
-        // 检查是否超过重复截止日期
         if let end = repeatEndDate, due >= end { return }
         
         let calendar = Calendar.current
@@ -58,7 +65,6 @@ final class TodoItem {
         case .monthly: nextDate = calendar.date(byAdding: .month, value: 1, to: due)
         case .none:    nextDate = nil
         }
-        
         guard let nextDue = nextDate else { return }
         
         let copy = TodoItem(
@@ -71,12 +77,21 @@ final class TodoItem {
         )
         copy.repeatType = repeatType
         copy.repeatEndDate = repeatEndDate
+        copy.reminderEnabled = reminderEnabled
+        copy.reminderHour = reminderHour
+        copy.reminderMinute = reminderMinute
         context.insert(copy)
         
-        // 安排下一次通知（切到主线程）
         Task { @MainActor in
             NotificationManager.shared.scheduleNotification(for: copy)
         }
+    }
+    
+    /// 提醒时间字符串
+    var reminderTimeDisplay: String {
+        let h = reminderHour
+        let m = reminderMinute
+        return String(format: "%02d:%02d", h, m)
     }
     
     var dueDateDisplay: String {
@@ -124,6 +139,9 @@ final class TodoItem {
         self.sortOrder = 0
         self.repeatType = RepeatType.none.rawValue
         self.repeatEndDate = nil
+        self.reminderEnabled = false
+        self.reminderHour = 9
+        self.reminderMinute = 0
         self.list = list
         self.tags = tags
     }

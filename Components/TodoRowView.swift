@@ -6,6 +6,7 @@ struct TodoRowView: View {
     let item: TodoItem
     var showListName: Bool = false
     var onToggle: (() -> Void)?
+    @State private var showingJournal = false
     
     var body: some View {
         HStack(spacing: 12) {
@@ -73,10 +74,21 @@ struct TodoRowView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            
+            // 记录按钮
+            Button(action: { showingJournal = true }) {
+                Image(systemName: "bookmark")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
         .opacity(item.isCompleted ? 0.6 : 1)
         .animation(.easeInOut(duration: 0.2), value: item.isCompleted)
+        .sheet(isPresented: $showingJournal) {
+            JournalEntryView(item: item)
+        }
     }
     
     private var dateDisplay: String? {

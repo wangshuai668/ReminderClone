@@ -1,5 +1,5 @@
 import SwiftUI
-import SwiftData
+import SwiftUI
 
 /// 新建事项 Sheet — 在所有页面中复用
 struct NewTodoSheet: View {
@@ -23,6 +23,13 @@ struct NewTodoSheet: View {
     @State private var repeatEndDate: Date = Date().addingTimeInterval(365*86400)
     @State private var hasRepeatEnd: Bool = false
     
+    // 独立提醒
+    @State private var reminderEnabled: Bool = false
+    @State private var reminderTime: Date = {
+        let cal = Calendar.current
+        return cal.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
+    }()
+    
     @State private var showingTagPicker = false
     @State private var showingNewTag = false
     @State private var newTagName = ""
@@ -38,17 +45,18 @@ struct NewTodoSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: 标题 & 备注
                 Section {
                     TextField("事项标题", text: $title, axis: .vertical)
                         .font(.body)
-                    
                     TextField("备注", text: $notes, axis: .vertical)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 
+                // MARK: 清单 / 日期 / 重复 / 提醒
                 Section {
-                    // 清单选择
+                    // 清单
                     Picker(selection: $selectedList) {
                         Text("无").tag(nil as TodoList?)
                         ForEach(lists) { list in
@@ -65,7 +73,7 @@ struct NewTodoSheet: View {
                     
                     // 日期
                     Toggle(isOn: $hasDueDate) {
-                        Label("日期", systemImage: "calendar")
+                        Label("截止日期", systemImage: "calendar")
                     }
                     
                     if hasDueDate {
@@ -77,10 +85,8 @@ struct NewTodoSheet: View {
                         .datePickerStyle(.graphical)
                         
                         Toggle("指定时间", isOn: $hasTime)
-                    }
-                    
-                    // 重复
-                    if hasDueDate {
+                        
+                        // 重复
                         Picker("重复", selection: $repeatType) {
                             ForEach(RepeatType.allCases, id: \.self) { type in
                                 Text(type.rawValue).tag(type)
@@ -88,15 +94,27 @@ struct NewTodoSheet: View {
                         }
                         
                         if repeatType != .none {
-                            Toggle("截止日期", isOn: $hasRepeatEnd)
+                            Toggle("重复截止", isOn: $hasRepeatEnd)
                             if hasRepeatEnd {
-                                DatePicker("重复截止", selection: $repeatEndDate,
+                                DatePicker("截止", selection: $repeatEndDate,
                                            displayedComponents: .date)
                             }
                         }
                     }
                     
-                    // 标签
+                    // 独立每日提醒（与截止日期无关）
+                    Toggle(isOn: $reminderEnabled) {
+                        Label("每日提醒", systemImage: "bell")
+                    }
+                    
+                    if reminderEnabled {
+                        DatePicker("提醒时间", selection: $reminderTime,
+                                   displayedComponents: .hourAndMinute)
+                    }
+                }
+                
+                // MARK: 标签
+                Section {
                     HStack {
                         Label("标签", systemImage: "tag")
                         Spacer()
@@ -127,7 +145,7 @@ struct NewTodoSheet: View {
                 tagPickerSheet
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
     
     // MARK: - 标签选择弹窗
@@ -199,10 +217,17 @@ struct NewTodoSheet: View {
             item.repeatEndDate = repeatEndDate
         }
         
+        // 独立提醒
+        item.reminderEnabled = reminderEnabled
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.hour, .minute], from: reminderTime)
+        item.reminderHour = comps.hour ?? 9
+        item.reminderMinute = comps.minute ?? 0
+        
         modelContext.insert(item)
         
         // 安排通知
-        if hasDueDate {
+        Task { @MainActor in
             NotificationManager.shared.scheduleNotification(for: item)
         }
         

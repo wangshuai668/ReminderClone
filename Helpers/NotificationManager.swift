@@ -13,7 +13,6 @@ final class NotificationManager: ObservableObject {
         Task { await checkAuthorization() }
     }
     
-    /// 请求通知权限
     func requestAuthorization() async {
         let center = UNUserNotificationCenter.current()
         do {
@@ -24,71 +23,94 @@ final class NotificationManager: ObservableObject {
         }
     }
     
-    /// 检查权限状态
     func checkAuthorization() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
         isAuthorized = settings.authorizationStatus == .authorized
     }
     
-    /// 为事项安排通知
+    /// 为事项安排所有通知（截止日期提醒 + 独立提醒）
     func scheduleNotification(for item: TodoItem) {
-        guard let dueDate = item.dueDate, isAuthorized else { return }
+        guard isAuthorized else { return }
         
-        let center = UNUserNotificationCenter.current()
-        let content = UNMutableNotificationContent()
-        content.title = "提醒事项"
-        content.body = item.title
-        content.sound = .default
-        
-        let trimmedNotes = item.notes.trimmingCharacters(in: .whitespaces)
-        if !trimmedNotes.isEmpty {
-            content.body = "\(item.title) — \(trimmedNotes)"
+        // 截止日期提醒
+        if let dueDate = item.dueDate {
+            scheduleDueDateNotification(for: item, at: dueDate)
         }
         
-        // 计算触发时间
+        // 独立每日提醒
+        if item.reminderEnabled {
+            scheduleDailyReminder(for: item)
+        }
+    }
+    
+    /// 截止日期通知（一次性）
+    private func scheduleDueDateNotification(for item: TodoItem, at date: Date) {
+        let center = UNUserNotificationCenter.current()
+        let content = makeNotificationContent(for: item, prefix: "截止")
+        
         let triggerDate: Date
         if item.hasTime {
-            triggerDate = dueDate
+            triggerDate = date
         } else {
-            // 没有具体时间则设为当天上午9点
             let calendar = Calendar.current
-            var components = calendar.dateComponents([.year, .month, .day], from: dueDate)
+            var components = calendar.dateComponents([.year, .month, .day], from: date)
             components.hour = 9
             components.minute = 0
-            triggerDate = calendar.date(from: components) ?? dueDate
+            triggerDate = calendar.date(from: components) ?? date
         }
         
         let triggerComponents = Calendar.current.dateComponents(
             [.year, .month, .day, .hour, .minute],
             from: triggerDate
         )
-        
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: triggerComponents,
-            repeats: false
-        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
         
         let request = UNNotificationRequest(
-            identifier: item.id.uuidString,
+            identifier: "due-\(item.id.uuidString)",
             content: content,
             trigger: trigger
         )
+        center.add(request)
+    }
+    
+    /// 每日重复提醒
+    private func scheduleDailyReminder(for item: TodoItem) {
+        let center = UNUserNotificationCenter.current()
+        let content = makeNotificationContent(for: item, prefix: "提醒")
         
-        center.add(request) { error in
-            if let error = error {
-                print("通知调度失败: \(error.localizedDescription)")
-            }
-        }
+        var components = DateComponents()
+        components.hour = item.reminderHour
+        components.minute = item.reminderMinute
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        
+        let request = UNNotificationRequest(
+            identifier: "reminder-\(item.id.uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        center.add(request)
     }
     
-    /// 取消事项的通知
+    /// 创建通知内容
+    private func makeNotificationContent(for item: TodoItem, prefix: String) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "\(prefix): \(item.title)"
+        content.body = item.notes.isEmpty ? "查看详情" : item.notes
+        content.sound = .default
+        return content
+    }
+    
+    /// 取消事项的所有通知
     func cancelNotification(for item: TodoItem) {
-        UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [item.id.uuidString])
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [
+            "due-\(item.id.uuidString)",
+            "reminder-\(item.id.uuidString)"
+        ])
     }
     
-    /// 取消所有通知
     func cancelAll() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }

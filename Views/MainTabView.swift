@@ -18,6 +18,11 @@ struct MainTabView: View {
                 .tabItem {
                     Label("搜索", systemImage: "magnifyingglass")
                 }
+            
+            JournalCalendarView()
+                .tabItem {
+                    Label("日志", systemImage: "bookmark")
+                }
         }
         .tint(.blue)
     }
