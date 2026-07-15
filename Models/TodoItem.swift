@@ -39,8 +39,10 @@ final class TodoItem {
         isCompleted = true
         completedAt = Date()
         
-        // 取消通知
-        NotificationManager.shared.cancelNotification(for: self)
+        // 取消通知（切到主线程）
+        Task { @MainActor in
+            NotificationManager.shared.cancelNotification(for: self)
+        }
         
         // 如果是重复事项，创建下一周期副本
         guard repeatTypeEnum != .none, let due = dueDate else { return }
@@ -71,8 +73,10 @@ final class TodoItem {
         copy.repeatEndDate = repeatEndDate
         context.insert(copy)
         
-        // 安排下一次通知
-        NotificationManager.shared.scheduleNotification(for: copy)
+        // 安排下一次通知（切到主线程）
+        Task { @MainActor in
+            NotificationManager.shared.scheduleNotification(for: copy)
+        }
     }
     
     var dueDateDisplay: String {
