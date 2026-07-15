@@ -11,7 +11,8 @@ struct JournalCalendarView: View {
         let grouped = Dictionary(grouping: allEntries) { entry in
             Calendar.current.startOfDay(for: entry.date)
         }
-        return grouped.sorted { $0.key > $1.key }
+        return grouped.map { (date: $0.key, entries: $0.value) }
+            .sorted { $0.date > $1.date }
     }
     
     var body: some View {
