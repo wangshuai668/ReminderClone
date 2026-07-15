@@ -3,7 +3,7 @@ name: Build iOS IPA (Unsigned - sideload with AltStore)
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:          # 手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,13 +17,11 @@ jobs:
       - name: 🔧 安装 XcodeGen 并生成项目
         run: |
           brew install xcodegen
-          cd ReminderClone
           xcodegen generate
           echo "✅ 项目已生成"
 
       - name: 🔨 编译 .app（跳过签名）
         run: |
-          cd ReminderClone
           xcodebuild build \
             -project ReminderClone.xcodeproj \
             -scheme ReminderClone \
@@ -37,21 +35,19 @@ jobs:
 
       - name: 📦 打包为未签名 IPA
         run: |
-          cd ReminderClone
           mkdir -p Export/Payload
-          # 找到编译好的 .app
           APP_PATH=$(find Build/DD -name "*.app" -type d | head -1)
           echo "App found at: $APP_PATH"
           cp -R "$APP_PATH" Export/Payload/
           cd Export
           zip -r ReminderClone.ipa Payload/
-          echo "✅ IPA 打包完成: Export/ReminderClone.ipa"
+          echo "✅ IPA 打包完成"
 
       - name: 📤 上传 .ipa
         uses: actions/upload-artifact@v4
         with:
           name: ReminderClone-IPA-Unsigned
-          path: ReminderClone/Export/ReminderClone.ipa
+          path: Export/ReminderClone.ipa
           if-no-files-found: error
 
       - name: 📋 使用说明
