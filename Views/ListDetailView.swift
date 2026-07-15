@@ -31,11 +31,7 @@ struct ListDetailView: View {
                 ForEach(incompleteItems) { item in
                     TodoRowView(item: item) {
                         withAnimation {
-                            item.isCompleted.toggle()
-                            item.completedAt = item.isCompleted ? Date() : nil
-                            if item.isCompleted {
-                                NotificationManager.shared.cancelNotification(for: item)
-                            }
+                            item.completeAndRepeat(in: modelContext)
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -48,8 +44,7 @@ struct ListDetailView: View {
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button {
                             withAnimation {
-                                item.isCompleted.toggle()
-                                item.completedAt = item.isCompleted ? Date() : nil
+                                item.completeAndRepeat(in: modelContext)
                             }
                         } label: {
                             Label("完成", systemImage: "checkmark.circle.fill")

@@ -39,8 +39,7 @@ struct SearchView: View {
                 ForEach(searchResults) { item in
                     TodoRowView(item: item, showListName: true) {
                         withAnimation {
-                            item.isCompleted.toggle()
-                            item.completedAt = item.isCompleted ? Date() : nil
+                            item.completeAndRepeat(in: modelContext)
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {

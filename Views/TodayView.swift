@@ -121,11 +121,7 @@ struct TodayView: View {
     
     private func toggleItem(_ item: TodoItem) {
         withAnimation {
-            item.isCompleted.toggle()
-            item.completedAt = item.isCompleted ? Date() : nil
-            if item.isCompleted {
-                NotificationManager.shared.cancelNotification(for: item)
-            }
+            item.completeAndRepeat(in: modelContext)
         }
     }
 }

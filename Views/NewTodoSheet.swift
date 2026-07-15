@@ -19,6 +19,9 @@ struct NewTodoSheet: View {
     @State private var hasDueDate: Bool = false
     @State private var dueDate: Date = Date()
     @State private var hasTime: Bool = false
+    @State private var repeatType: RepeatType = .none
+    @State private var repeatEndDate: Date = Date().addingTimeInterval(365*86400)
+    @State private var hasRepeatEnd: Bool = false
     
     @State private var showingTagPicker = false
     @State private var showingNewTag = false
@@ -74,6 +77,23 @@ struct NewTodoSheet: View {
                         .datePickerStyle(.graphical)
                         
                         Toggle("指定时间", isOn: $hasTime)
+                    }
+                    
+                    // 重复
+                    if hasDueDate {
+                        Picker("重复", selection: $repeatType) {
+                            ForEach(RepeatType.allCases, id: \.self) { type in
+                                Text(type.rawValue).tag(type)
+                            }
+                        }
+                        
+                        if repeatType != .none {
+                            Toggle("截止日期", isOn: $hasRepeatEnd)
+                            if hasRepeatEnd {
+                                DatePicker("重复截止", selection: $repeatEndDate,
+                                           displayedComponents: .date)
+                            }
+                        }
                     }
                     
                     // 标签
@@ -174,6 +194,10 @@ struct NewTodoSheet: View {
             dueDate: hasDueDate ? dueDate : nil,
             hasTime: hasDueDate && hasTime
         )
+        item.repeatType = repeatType.rawValue
+        if repeatType != .none && hasRepeatEnd {
+            item.repeatEndDate = repeatEndDate
+        }
         
         modelContext.insert(item)
         
