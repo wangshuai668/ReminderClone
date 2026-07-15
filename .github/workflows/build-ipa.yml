@@ -1,4 +1,4 @@
-name: Build iOS IPA
+name: Build iOS IPA (Unsigned - sideload with AltStore)
 
 on:
   push:
@@ -14,61 +14,53 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 安装 XcodeGen
+      - name: 🔧 安装 XcodeGen 并生成项目
         run: |
           brew install xcodegen
           cd ReminderClone
           xcodegen generate
           echo "✅ 项目已生成"
 
-      - name: 🔨 Archive 打包
+      - name: 🔨 编译 .app（跳过签名）
         run: |
           cd ReminderClone
-          xcodebuild archive \
+          xcodebuild build \
             -project ReminderClone.xcodeproj \
             -scheme ReminderClone \
             -configuration Debug \
             -sdk iphoneos \
-            -archivePath Build/ReminderClone.xcarchive \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=${{ secrets.DEV_TEAM_ID }} \
-            -allowProvisioningUpdates
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+            -derivedDataPath Build/DD \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+          echo "✅ 编译完成 (unsigned)"
 
-      - name: 📦 导出 .ipa
+      - name: 📦 打包为未签名 IPA
         run: |
           cd ReminderClone
-          mkdir -p Export
-          cat > ExportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>development</string>
-            <key>signingStyle</key>
-            <string>automatic</string>
-            <key>stripSwiftSymbols</key>
-            <true/>
-            <key>teamID</key>
-            <string>${{ secrets.DEV_TEAM_ID }}</string>
-          </dict>
-          </plist>
-          EOF
-          xcodebuild -exportArchive \
-            -archivePath Build/ReminderClone.xcarchive \
-            -exportPath Export \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          mkdir -p Export/Payload
+          # 找到编译好的 .app
+          APP_PATH=$(find Build/DD -name "*.app" -type d | head -1)
+          echo "App found at: $APP_PATH"
+          cp -R "$APP_PATH" Export/Payload/
+          cd Export
+          zip -r ReminderClone.ipa Payload/
+          echo "✅ IPA 打包完成: Export/ReminderClone.ipa"
 
       - name: 📤 上传 .ipa
         uses: actions/upload-artifact@v4
         with:
-          name: ReminderClone-IPA
-          path: ReminderClone/Export/*.ipa
+          name: ReminderClone-IPA-Unsigned
+          path: ReminderClone/Export/ReminderClone.ipa
           if-no-files-found: error
+
+      - name: 📋 使用说明
+        run: |
+          echo "==================== 📱 安装说明 ===================="
+          echo "1. 下载上面的 ReminderClone-IPA-Unsigned"
+          echo "2. 电脑上打开 AltServer"
+          echo "3. iPhone 连接电脑"
+          echo "4. AltServer → Install AltStore → 装到 iPhone"
+          echo "5. iPhone 上打开 AltStore → My Apps → 右下角 +"
+          echo "6. 选择下载的 .ipa → 自动签名安装"
+          echo "===================================================="
