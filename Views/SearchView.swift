@@ -18,7 +18,7 @@ struct SearchView: View {
         let query = searchText.lowercased()
         return allItems.filter { item in
             item.title.lowercased().contains(query) ||
-            (item.notes?.lowercased().contains(query) ?? false) ||
+            item.notes.lowercased().contains(query) ||
             item.tags.contains { $0.name.lowercased().contains(query) } ||
             (item.list?.name.lowercased().contains(query) ?? false)
         }
