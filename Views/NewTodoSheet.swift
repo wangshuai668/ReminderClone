@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 新建事项 Sheet — 在所有页面中复用
+/// 新建事项 Sheet
 struct NewTodoSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -30,6 +30,13 @@ struct NewTodoSheet: View {
         return cal.date(from: DateComponents(hour: 9, minute: 0)) ?? Date()
     }()
     
+    // 新字段
+    @State private var priority: Priority = .none
+    @State private var isImportant: Bool = false
+    @State private var estimatedMinutes: Int = 0
+    @State private var energyLevel: EnergyLevel = .any
+    @State private var subTaskTexts: [String] = []
+    
     @State private var showingTagPicker = false
     @State private var showingNewTag = false
     @State private var newTagName = ""
@@ -54,9 +61,43 @@ struct NewTodoSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 
-                // MARK: 清单 / 日期 / 重复 / 提醒
+                // MARK: 优先级 & 重要
                 Section {
-                    // 清单
+                    Picker("优先级", selection: $priority) {
+                        ForEach(Priority.allCases, id: \.self) { p in
+                            Text(p.rawValue).tag(p)
+                        }
+                    }
+                    
+                    Toggle(isOn: $isImportant) {
+                        Label("重要", systemImage: "exclamationmark.circle")
+                            .foregroundStyle(isImportant ? .orange : .secondary)
+                    }
+                    
+                    Picker("能量等级", selection: $energyLevel) {
+                        ForEach(EnergyLevel.allCases, id: \.self) { e in
+                            Text(e.rawValue).tag(e)
+                        }
+                    }
+                    
+                    HStack {
+                        Label("预计耗时", systemImage: "clock")
+                        Spacer()
+                        Picker("", selection: $estimatedMinutes) {
+                            Text("不限").tag(0)
+                            Text("15分钟").tag(15)
+                            Text("30分钟").tag(30)
+                            Text("1小时").tag(60)
+                            Text("2小时").tag(120)
+                            Text("3小时").tag(180)
+                            Text("4小时+").tag(240)
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
+                
+                // MARK: 日期 & 重复
+                Section {
                     Picker(selection: $selectedList) {
                         Text("无").tag(nil as TodoList?)
                         ForEach(lists) { list in
@@ -71,7 +112,6 @@ struct NewTodoSheet: View {
                         Label("清单", systemImage: "folder")
                     }
                     
-                    // 日期
                     Toggle(isOn: $hasDueDate) {
                         Label("截止日期", systemImage: "calendar")
                     }
@@ -86,7 +126,6 @@ struct NewTodoSheet: View {
                         
                         Toggle("指定时间", isOn: $hasTime)
                         
-                        // 重复
                         Picker("重复", selection: $repeatType) {
                             ForEach(RepeatType.allCases, id: \.self) { type in
                                 Text(type.rawValue).tag(type)
@@ -102,7 +141,6 @@ struct NewTodoSheet: View {
                         }
                     }
                     
-                    // 独立每日提醒（与截止日期无关）
                     Toggle(isOn: $reminderEnabled) {
                         Label("每日提醒", systemImage: "bell")
                     }
@@ -111,6 +149,31 @@ struct NewTodoSheet: View {
                         DatePicker("提醒时间", selection: $reminderTime,
                                    displayedComponents: .hourAndMinute)
                     }
+                }
+                
+                // MARK: 子任务
+                Section {
+                    ForEach(subTaskTexts.indices, id: \.self) { i in
+                        HStack {
+                            Image(systemName: "circle")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            TextField("子任务 \(i + 1)", text: $subTaskTexts[i])
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                subTaskTexts.remove(at: i)
+                            } label: {
+                                Label("删除", systemImage: "trash")
+                            }
+                        }
+                    }
+                    
+                    Button(action: { subTaskTexts.append("") }) {
+                        Label("添加子任务", systemImage: "plus.circle")
+                    }
+                } header: {
+                    Label("子任务", systemImage: "checklist")
                 }
                 
                 // MARK: 标签
@@ -145,7 +208,7 @@ struct NewTodoSheet: View {
                 tagPickerSheet
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large])
     }
     
     // MARK: - 标签选择弹窗
@@ -212,6 +275,10 @@ struct NewTodoSheet: View {
             dueDate: hasDueDate ? dueDate : nil,
             hasTime: hasDueDate && hasTime
         )
+        item.priority = priority.rawValue
+        item.isImportant = isImportant
+        item.estimatedMinutes = estimatedMinutes
+        item.energyLevel = energyLevel.rawValue
         item.repeatType = repeatType.rawValue
         if repeatType != .none && hasRepeatEnd {
             item.repeatEndDate = repeatEndDate
@@ -224,9 +291,17 @@ struct NewTodoSheet: View {
         item.reminderHour = comps.hour ?? 9
         item.reminderMinute = comps.minute ?? 0
         
+        // 子任务
+        for st in subTaskTexts {
+            let t = st.trimmingCharacters(in: .whitespaces)
+            guard !t.isEmpty else { continue }
+            let sub = SubTask(title: t, sortOrder: item.subTasks.count)
+            sub.parentItem = item
+            item.subTasks.append(sub)
+        }
+        
         modelContext.insert(item)
         
-        // 安排通知
         Task { @MainActor in
             NotificationManager.shared.scheduleNotification(for: item)
         }

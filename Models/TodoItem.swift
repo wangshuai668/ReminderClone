@@ -1,12 +1,55 @@
 import Foundation
 import SwiftData
 
-/// 重复周期
+// MARK: - 优先级
+enum Priority: String, Codable, CaseIterable {
+    case none = "普通"
+    case low = "⭐ 低"
+    case medium = "🔥 中"
+    case high = "🚨 高"
+    
+    var sortOrder: Int {
+        switch self {
+        case .none: return 0
+        case .low: return 1
+        case .medium: return 2
+        case .high: return 3
+        }
+    }
+}
+
+// MARK: - 能量等级
+enum EnergyLevel: String, Codable, CaseIterable {
+    case any = "不限"
+    case low = "💤 低能量"
+    case high = "⚡ 高能量"
+}
+
+// MARK: - 重复周期
 enum RepeatType: String, Codable, CaseIterable {
     case none = "不重复"
     case daily = "每天"
     case weekly = "每周"
     case monthly = "每月"
+}
+
+// MARK: - 子任务
+@Model
+final class SubTask {
+    @Attribute(.unique) var id: UUID
+    var title: String
+    var isCompleted: Bool
+    var sortOrder: Int
+    var createdAt: Date
+    var parentItem: TodoItem?
+    
+    init(title: String, sortOrder: Int = 0) {
+        self.id = UUID()
+        self.title = title
+        self.isCompleted = false
+        self.sortOrder = sortOrder
+        self.createdAt = Date()
+    }
 }
 
 /// 单个待办事项模型
@@ -21,26 +64,70 @@ final class TodoItem {
     var createdAt: Date
     var completedAt: Date?
     var sortOrder: Int
+    
+    // 优先级
+    var priority: String
+    var isImportant: Bool
+    
+    // 预计耗时（分钟）
+    var estimatedMinutes: Int
+    
+    // 能量等级
+    var energyLevel: String
+    
+    // 重复
     var repeatType: String
     var repeatEndDate: Date?
     
-    /// 独立提醒（与截止日期分开）
+    // 独立提醒
     var reminderEnabled: Bool
-    var reminderHour: Int       // 0-23
-    var reminderMinute: Int     // 0-59
+    var reminderHour: Int
+    var reminderMinute: Int
+    
+    // 子任务
+    @Relationship(deleteRule: .cascade)
+    var subTasks: [SubTask]
     
     var list: TodoList?
     
     @Relationship(deleteRule: .nullify)
     var tags: [Tag]
     
-    /// 日志条目
     @Relationship(deleteRule: .cascade)
     var journalEntries: [JournalEntry] = []
+    
+    // MARK: - 计算属性
+    
+    var priorityEnum: Priority {
+        get { Priority(rawValue: priority) ?? .none }
+        set { priority = newValue.rawValue }
+    }
+    
+    var energyLevelEnum: EnergyLevel {
+        get { EnergyLevel(rawValue: energyLevel) ?? .any }
+        set { energyLevel = newValue.rawValue }
+    }
     
     var repeatTypeEnum: RepeatType {
         get { RepeatType(rawValue: repeatType) ?? .none }
         set { repeatType = newValue.rawValue }
+    }
+    
+    /// 子任务进度
+    var subTaskProgress: String {
+        let total = subTasks.count
+        guard total > 0 else { return "" }
+        let done = subTasks.filter(\.isCompleted).count
+        return "\(done)/\(total)"
+    }
+    
+    /// 预计耗时显示
+    var estimatedTimeDisplay: String {
+        guard estimatedMinutes > 0 else { return "" }
+        if estimatedMinutes < 60 { return "\(estimatedMinutes)分钟" }
+        let h = estimatedMinutes / 60
+        let m = estimatedMinutes % 60
+        return m > 0 ? "\(h)小时\(m)分钟" : "\(h)小时"
     }
     
     /// 完成并生成下一次副本（重复事项）
@@ -48,12 +135,10 @@ final class TodoItem {
         isCompleted = true
         completedAt = Date()
         
-        // 取消通知
         Task { @MainActor in
             NotificationManager.shared.cancelNotification(for: self)
         }
         
-        // 如果是重复事项，创建下一周期副本
         guard repeatTypeEnum != .none, let due = dueDate else { return }
         if let end = repeatEndDate, due >= end { return }
         
@@ -80,6 +165,10 @@ final class TodoItem {
         copy.reminderEnabled = reminderEnabled
         copy.reminderHour = reminderHour
         copy.reminderMinute = reminderMinute
+        copy.priority = priority
+        copy.isImportant = isImportant
+        copy.estimatedMinutes = estimatedMinutes
+        copy.energyLevel = energyLevel
         context.insert(copy)
         
         Task { @MainActor in
@@ -137,11 +226,16 @@ final class TodoItem {
         self.createdAt = Date()
         self.completedAt = nil
         self.sortOrder = 0
+        self.priority = Priority.none.rawValue
+        self.isImportant = false
+        self.estimatedMinutes = 0
+        self.energyLevel = EnergyLevel.any.rawValue
         self.repeatType = RepeatType.none.rawValue
         self.repeatEndDate = nil
         self.reminderEnabled = false
         self.reminderHour = 9
         self.reminderMinute = 0
+        self.subTasks = []
         self.list = list
         self.tags = tags
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 事项行组件 — 显示单个待办事项
+/// 事项行组件
 struct TodoRowView: View {
     let item: TodoItem
     var showListName: Bool = false
@@ -10,7 +10,7 @@ struct TodoRowView: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // 完成/未完成圆圈
+            // 完成圆圈
             Button(action: { onToggle?() }) {
                 Image(systemName: item.isCompleted
                     ? "checkmark.circle.fill"
@@ -18,18 +18,37 @@ struct TodoRowView: View {
                     .font(.title2)
                     .foregroundStyle(item.isCompleted ? .green : .secondary)
                     .contentTransition(.symbolEffect(.replace))
+                    .frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(item.isCompleted ? "标记为未完成" : "标记为完成")
+            .accessibilityHint("双击切换完成状态")
             
             VStack(alignment: .leading, spacing: 4) {
-                // 标题
-                Text(item.title)
-                    .font(.body)
-                    .strikethrough(item.isCompleted)
-                    .foregroundStyle(item.isCompleted ? .secondary : .primary)
+                // 标题行：优先级 + 重要标记 + 标题
+                HStack(spacing: 4) {
+                    // 优先级标识
+                    if item.priorityEnum != .none {
+                        Text(item.priorityEnum.rawValue)
+                            .font(.caption2)
+                    }
+                    
+                    // 重要标记
+                    if item.isImportant {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                    
+                    Text(item.title)
+                        .font(.body)
+                        .strikethrough(item.isCompleted)
+                        .foregroundStyle(item.isCompleted ? .secondary : .primary)
+                        .lineLimit(2)
+                }
                 
-                // 标签行
-                if !item.tags.isEmpty || item.dueDate != nil || (showListName && item.list != nil) {
+                // 详情行
+                if hasDetails {
                     HStack(spacing: 6) {
                         // 清单名称
                         if showListName, let list = item.list {
@@ -42,13 +61,26 @@ struct TodoRowView: View {
                             .foregroundStyle(Color(hex: list.colorHex))
                         }
                         
-                        // 标签
-                        ForEach(item.tags.prefix(3)) { tag in
-                            TagBadgeView(tag: tag)
+                        // 子任务进度
+                        if !item.subTaskProgress.isEmpty {
+                            Label(item.subTaskProgress, systemImage: "checklist")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         
-                        if item.tags.count > 3 {
-                            Text("+\(item.tags.count - 3)")
+                        // 预计耗时
+                        if !item.estimatedTimeDisplay.isEmpty {
+                            Label(item.estimatedTimeDisplay, systemImage: "clock")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        // 标签
+                        ForEach(item.tags.prefix(2)) { tag in
+                            TagBadgeView(tag: tag)
+                        }
+                        if item.tags.count > 2 {
+                            Text("+\(item.tags.count - 2)")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -89,6 +121,14 @@ struct TodoRowView: View {
         .sheet(isPresented: $showingJournal) {
             JournalEntryView(item: item)
         }
+    }
+    
+    private var hasDetails: Bool {
+        item.list != nil ||
+        !item.subTaskProgress.isEmpty ||
+        !item.estimatedTimeDisplay.isEmpty ||
+        !item.tags.isEmpty ||
+        item.dueDate != nil
     }
     
     private var dateDisplay: String? {
