@@ -26,6 +26,7 @@ struct ListHomeView: View {
     @State private var newListIcon = "list.bullet"
     @State private var newListColor = "#007AFF"
     @State private var showingAIQuickAdd = false
+    @State private var showingGoalPlanner = false
     
     var body: some View {
         NavigationStack {
@@ -47,6 +48,32 @@ struct ListHomeView: View {
                                 Text("AI 创建")
                                     .font(.subheadline.weight(.medium))
                                 Text("自然语言快速添加任务")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // 目标规划
+                    Button(action: { showingGoalPlanner = true }) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(LinearGradient(colors: [.purple, .pink], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.2))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "brain.head.profile")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.purple)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("目标规划")
+                                    .font(.subheadline.weight(.medium))
+                                Text("AI 自动拆分每日任务")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -194,6 +221,9 @@ struct ListHomeView: View {
             }
             .sheet(isPresented: $showingAIQuickAdd) {
                 AIQuickAddView()
+            }
+            .sheet(isPresented: $showingGoalPlanner) {
+                GoalPlannerView()
             }
         }
     }
