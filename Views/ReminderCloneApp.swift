@@ -13,11 +13,9 @@ struct ReminderCloneApp: App {
         } catch {
             // 模型变更导致迁移失败 → 删除旧库重建，不会 crash
             print("⚠️ SwiftData 迁移失败: \(error)")
-            if let storeURL = config.url {
-                let storeDir = storeURL.deletingLastPathComponent()
-                try? FileManager.default.removeItem(at: storeDir)
-                print("✅ 已删除旧数据库，重建新库")
-            }
+            let storeDir = config.url.deletingLastPathComponent()
+            try? FileManager.default.removeItem(at: storeDir)
+            print("✅ 已删除旧数据库，重建新库")
             return try! ModelContainer(for: schema, configurations: config)
         }
     }()
