@@ -1,4 +1,36 @@
 {
-  "version": 1,
-  "tasks": []
+  "version": 2,
+  "tasks": [
+    {
+      "title": "📱 重构 TodoRowView 组件",
+      "notes": "添加编辑按钮、Context Menu、accessibilityLabel",
+      "dueDate": "2026-07-17T09:00:00.767673",
+      "hasTime": true,
+      "priority": "high",
+      "isImportant": true,
+      "estimatedMinutes": 90,
+      "energyLevel": "high"
+    },
+    {
+      "title": "🔄 实现任务编辑（长按/点击(i)按钮）",
+      "notes": "ListView 中每个事项支持编辑标题、日期、优先级等",
+      "dueDate": "2026-07-17T14:00:00.767687",
+      "hasTime": true,
+      "priority": "high",
+      "estimatedMinutes": 120,
+      "energyLevel": "high"
+    },
+    {
+      "title": "🧪 测试通知功能",
+      "notes": "创建一个带提醒的事项，锁屏等通知弹出",
+      "dueDate": "2026-07-18T10:00:00.767690",
+      "hasTime": true,
+      "priority": "medium",
+      "reminderEnabled": true,
+      "reminderHour": 10,
+      "reminderMinute": 0,
+      "estimatedMinutes": 30,
+      "energyLevel": "low"
+    }
+  ]
 }
