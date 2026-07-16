@@ -40,6 +40,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             await NotificationManager.shared.requestAuthorization()
             // 恢复所有未完成事项的通知（处理重装/重启后通知丢失）
             NotificationManager.shared.rescheduleAll(in: ReminderCloneApp.container.mainContext)
+            // 导入 Agent 下达的任务
+            let count = AgentBridge.shared.importPendingTasks(into: ReminderCloneApp.container.mainContext)
+            if count > 0 {
+                try? ReminderCloneApp.container.mainContext.save()
+            }
         }
         return true
     }

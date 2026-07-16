@@ -31,6 +31,36 @@ struct ListHomeView: View {
     var body: some View {
         NavigationStack {
             List {
+                // MARK: — Agent 任务（Hermes Agent 下达）
+                if AgentBridge.shared.hasPendingTasks {
+                    Section {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.2))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "robot")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.cyan)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Agent 新任务")
+                                    .font(.subheadline.weight(.medium))
+                                Text("\(AgentBridge.shared.pendingCount) 个任务等待导入")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(.green)
+                        }
+                    } header: {
+                        Label("🤖 Agent 通道", systemImage: "antenna.radiowaves.left.and.right")
+                            .foregroundStyle(.cyan)
+                    }
+                }
+                
                 // MARK: — 智能列表
                 Section {
                     // AI 创建
