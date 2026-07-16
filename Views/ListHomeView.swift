@@ -6,6 +6,21 @@ struct ListHomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TodoList.sortOrder) private var lists: [TodoList]
     
+    /// 全局未完成事项数
+    @Query(filter: #Predicate<TodoItem> { !$0.isCompleted })
+    private var allItems: [TodoItem]
+    
+    private var dueTomorrowCount: Int {
+        allItems.filter {
+            guard let d = $0.dueDate else { return false }
+            return Calendar.current.isDateInTomorrow(d)
+        }.count
+    }
+    
+    private var importantCount: Int {
+        allItems.filter { $0.isImportant }.count
+    }
+    
     @State private var showingNewList = false
     @State private var newListName = ""
     @State private var newListIcon = "list.bullet"
@@ -14,32 +29,117 @@ struct ListHomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                // 所有清单
-                ForEach(lists) { list in
-                    NavigationLink(destination: ListDetailView(list: list)) {
-                        ListCardView(list: list)
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
-                }
-                .onDelete(perform: deleteLists)
-                
-                // "已完成" 入口
-                NavigationLink(destination: CompletedView()) {
-                    HStack(spacing: 16) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.green.opacity(0.15))
-                                .frame(width: 44, height: 44)
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(.green)
+                // MARK: — 智能列表
+                Section {
+                    // 今日最佳
+                    NavigationLink(destination: TodayView()) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.yellow.opacity(0.15))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "star.fill")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.yellow)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("今日最佳")
+                                    .font(.subheadline.weight(.medium))
+                                Text("按优先级·能量智能排序")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                        Text("已完成")
-                            .font(.headline)
                     }
-                    .padding(.vertical, 8)
+                    
+                    // 明天截止
+                    if dueTomorrowCount > 0 {
+                        NavigationLink(destination: TodayView()) {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.orange.opacity(0.15))
+                                        .frame(width: 40, height: 40)
+                                    Image(systemName: "bell.fill")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.orange)
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("即将逾期")
+                                        .font(.subheadline.weight(.medium))
+                                    Text("\(dueTomorrowCount) 项明天截止")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 重要事项
+                    if importantCount > 0 {
+                        NavigationLink(destination: TodayView()) {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.red.opacity(0.15))
+                                        .frame(width: 40, height: 40)
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.red)
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("重要事项")
+                                        .font(.subheadline.weight(.medium))
+                                    Text("\(importantCount) 项标记为重要")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Label("智能列表", systemImage: "sparkle.magnifyingglass")
+                        .foregroundStyle(.blue)
                 }
-                .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
+                
+                // MARK: — 我的清单
+                Section {
+                    ForEach(lists) { list in
+                        NavigationLink(destination: ListDetailView(list: list)) {
+                            ListCardView(list: list)
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
+                    }
+                    .onDelete(perform: deleteLists)
+                } header: {
+                    HStack {
+                        Text("我的清单")
+                        Spacer()
+                        Text("\(lists.count) 个清单 · \(allItems.count) 项待办")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // MARK: — 更多
+                Section {
+                    NavigationLink(destination: CompletedView()) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.green.opacity(0.15))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.green)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("已完成")
+                                    .font(.subheadline.weight(.medium))
+                            }
+                        }
+                    }
+                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("我的清单")
@@ -49,7 +149,6 @@ struct ListHomeView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                // 新建清单按钮
                 Button(action: { showingNewList = true }) {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
