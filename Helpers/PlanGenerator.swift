@@ -41,29 +41,29 @@ final class PlanGenerator {
             ("第3天: Stack 布局", "HStack/VStack/ZStack、alignment、spacing", .high),
             ("第4天: List 与 ScrollView", "动态列表、Section、下拉刷新", .high),
             ("第5天: @State 与绑定", "状态管理基础、$binding、双向绑定", .high),
-            ("第6天: Button 与 交互", "Button 样式、Toggle、Slider、Picker", .medium),
-            ("第7天: NavigationStack", "导航栏、NavigationLink、toolbar", .medium),
-            ("第8天: Form 与 输入", "Form 表单、TextField、DatePicker", .medium),
-            ("第9天: Sheet 与 弹窗", ".sheet、.alert、.confirmationDialog", .medium),
-            ("第10天: 动画基础", "withAnimation、.animation、过渡效果", .medium),
+            ("第6天: Button 与 交互", "Button 样式、Toggle、Slider、Picker", .high),
+            ("第7天: NavigationStack", "导航栏、NavigationLink、toolbar", .high),
+            ("第8天: Form 与 输入", "Form 表单、TextField、DatePicker", .high),
+            ("第9天: Sheet 与 弹窗", ".sheet、.alert、.confirmationDialog", .high),
+            ("第10天: 动画基础", "withAnimation、.animation、过渡效果", .high),
             ("第11天: 手势识别", "TapGesture、DragGesture、LongPress", .high),
             ("第12天: @Observable", "iOS 17 可观察对象、@Bindable", .high),
-            ("第13天: @Environment", "环境变量、自定义环境值", .medium),
+            ("第13天: @Environment", "环境变量、自定义环境值", .high),
             ("第14天: 数据流总结", "State → Binding → Observable → Environment", .high),
             ("第15天: SwiftData 入门", "@Model、@Query、ModelContainer", .high),
             ("第16天: 增删改查", "modelContext.insert/delete/save", .high),
             ("第17天: @Relationship", "一对多、级联删除、反向关系", .high),
-            ("第18天: @Attribute 选项", ".unique、.externalStorage、.transformable", .medium),
+            ("第18天: @Attribute 选项", ".unique、.externalStorage、.transformable", .high),
             ("第19天: 排序与过滤", "SortDescriptor、Predicate、FetchDescriptor", .high),
-            ("第20天: 数据迁移", "Schema 版本、MigrationPlan、轻量迁移", .medium),
+            ("第20天: 数据迁移", "Schema 版本、MigrationPlan、轻量迁移", .high),
             ("第21天: 项目: Todo App 搭建", "清单列表 + 事项 CRUD", .high),
             ("第22天: 项目: 标签与筛选", "多标签系统、搜索功能", .high),
-            ("第23天: 项目: 通知集成", "UNUserNotificationCenter、本地通知", .medium),
+            ("第23天: 项目: 通知集成", "UNUserNotificationCenter、本地通知", .high),
             ("第24天: 项目: 日历视图", "月视图组件、日志 Calendar", .high),
             ("第25天: 项目: 多主题/深色模式", "colorScheme、自定义主题", .low),
             ("第26天: Widget 开发", "WidgetExtension、TimelineProvider", .high),
-            ("第27天: 性能优化", "懒加载、diffing、减少重绘", .medium),
-            ("第28天: 测试与调试", "Preview、Xcode 调试工具", .medium),
+            ("第27天: 性能优化", "懒加载、diffing、减少重绘", .high),
+            ("第28天: 测试与调试", "Preview、Xcode 调试工具", .high),
             ("第29天: 项目收尾", "修 bug、UI 打磨、空状态", .low),
             ("第30天: 总结与发布", "学习笔记整理、App Store 准备", .low),
         ]
@@ -73,7 +73,7 @@ final class PlanGenerator {
                 title: item.0,
                 notes: item.1,
                 dayOffset: i,
-                priority: i < 7 ? .high : (i < 14 ? .medium : .none),
+                priority: i < 7 ? .high : (i < 14 ? .high : .none),
                 energyLevel: item.2,
                 estimatedMinutes: 60
             )
@@ -108,7 +108,7 @@ final class PlanGenerator {
             ("第29-30天: 总结", "知识图谱、下一步方向"),
         ]
         return Array(fullPlan.prefix(min(days, fullPlan.count))).enumerated().map { i, item in
-            PlannedTask(title: item.0, notes: item.1, dayOffset: i, priority: i < 5 ? .high : .medium, energyLevel: i < 10 ? .high : .medium, estimatedMinutes: 45)
+            PlannedTask(title: item.0, notes: item.1, dayOffset: i, priority: i < 5 ? .high : .high, energyLevel: i < 10 ? .high : .high, estimatedMinutes: 45)
         }
     }
     
@@ -124,7 +124,7 @@ final class PlanGenerator {
             ("🧘 休息/拉伸", "全身拉伸 20min、泡沫轴放松", .low),
             ("🏋️ 力量训练 - 肩部", "哑铃推举 4x10、侧平举 4x12、面拉 3x15", .high),
             ("🦵 力量训练 - 腿部", "深蹲 4x8、硬拉 4x8、腿举 3x12", .high),
-            ("💪 力量训练 - 手臂", "二头弯举 4x12、三头下压 4x12、锤式弯举 3x12", .medium),
+            ("💪 力量训练 - 手臂", "二头弯举 4x12、三头下压 4x12、锤式弯举 3x12", .high),
         ]
         for w in 0..<weeks {
             for (i, r) in routines.enumerated() {
@@ -144,7 +144,7 @@ final class PlanGenerator {
                 title: "第\(weeks * 7 + i + 1)天: \(r.0)",
                 notes: r.1,
                 dayOffset: weeks * 7 + i,
-                priority: .medium,
+                priority: .high,
                 energyLevel: r.2,
                 estimatedMinutes: 45
             ))
@@ -163,8 +163,8 @@ final class PlanGenerator {
                 title: "第\(i+1)天: 英语 \(topic)",
                 notes: week == 0 ? "基础阶段：\(topic)" : "进阶阶段：\(topic)",
                 dayOffset: i,
-                priority: i < 7 ? .high : .medium,
-                energyLevel: day < 3 ? .high : .medium,
+                priority: i < 7 ? .high : .high,
+                energyLevel: day < 3 ? .high : .high,
                 estimatedMinutes: 30
             )
         }
@@ -183,7 +183,7 @@ final class PlanGenerator {
                 title: "阅读 \(displayName) 第\(i+1)天",
                 notes: "今日目标：阅读 \(pages) 页，记录要点",
                 dayOffset: i,
-                priority: .medium,
+                priority: .high,
                 energyLevel: i % 2 == 0 ? .high : .low,
                 estimatedMinutes: pages * 2
             )
@@ -199,7 +199,7 @@ final class PlanGenerator {
                 title: "\(short) · 第\(i+1)天",
                 notes: "阶段：\(phase)\n学习目标：完成当日学习任务，记录笔记",
                 dayOffset: i,
-                priority: i < 7 ? .high : .medium,
+                priority: i < 7 ? .high : .high,
                 energyLevel: .high,
                 estimatedMinutes: 45
             )
@@ -215,7 +215,7 @@ final class PlanGenerator {
                 title: "\(short) · 第\(i+1)天",
                 notes: "阶段：\(phase)\n今日任务：推进项目进度，记录完成情况",
                 dayOffset: i,
-                priority: i < 7 ? .high : .medium,
+                priority: i < 7 ? .high : .high,
                 energyLevel: i % 3 == 0 ? .high : .low,
                 estimatedMinutes: 120
             )
@@ -229,7 +229,7 @@ final class PlanGenerator {
                 title: "\(goal) · Day \(i+1)",
                 notes: "自定义目标",
                 dayOffset: i,
-                priority: .medium,
+                priority: .high,
                 energyLevel: .any,
                 estimatedMinutes: 30
             )
