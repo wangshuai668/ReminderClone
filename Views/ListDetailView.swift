@@ -70,6 +70,10 @@ struct ListDetailView: View {
                             withAnimation {
                                 item.isCompleted.toggle()
                                 item.completedAt = nil
+                                // 取消完成后重新安排通知
+                                Task { @MainActor in
+                                    NotificationManager.shared.scheduleNotification(for: item)
+                                }
                             }
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {

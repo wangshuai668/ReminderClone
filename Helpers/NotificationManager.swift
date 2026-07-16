@@ -1,6 +1,7 @@
 import Foundation
 import UserNotifications
 import SwiftUI
+import SwiftData
 
 /// 本地通知管理器
 @MainActor
@@ -113,5 +114,16 @@ final class NotificationManager: ObservableObject {
     
     func cancelAll() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+    }
+    
+    /// 恢复所有未完成事项的通知（App 重装后调用）
+    func rescheduleAll(in context: ModelContext) {
+        guard isAuthorized else { return }
+        let descriptor = FetchDescriptor<TodoItem>(predicate: #Predicate { !$0.isCompleted })
+        guard let items = try? context.fetch(descriptor) else { return }
+        for item in items {
+            scheduleNotification(for: item)
+        }
+        print("📬 已恢复 \(items.count) 个事项的通知")
     }
 }

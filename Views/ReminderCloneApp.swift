@@ -5,7 +5,7 @@ import SwiftData
 struct ReminderCloneApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
-    let container: ModelContainer = {
+    static let container: ModelContainer = {
         let schema = Schema([TodoList.self, TodoItem.self, Tag.self, JournalEntry.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
@@ -26,11 +26,11 @@ struct ReminderCloneApp: App {
         WindowGroup {
             MainTabView()
         }
-        .modelContainer(container)
+        .modelContainer(Self.container)
     }
 }
 
-/// App Delegate: 启动时请求通知权限
+/// App Delegate: 启动时请求通知权限 + 恢复已有事项的通知
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _ application: UIApplication,
@@ -38,6 +38,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         Task { @MainActor in
             await NotificationManager.shared.requestAuthorization()
+            // 恢复所有未完成事项的通知（处理重装/重启后通知丢失）
+            NotificationManager.shared.rescheduleAll(in: ReminderCloneApp.container.mainContext)
         }
         return true
     }
