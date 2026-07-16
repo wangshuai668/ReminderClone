@@ -25,12 +25,39 @@ struct ListHomeView: View {
     @State private var newListName = ""
     @State private var newListIcon = "list.bullet"
     @State private var newListColor = "#007AFF"
+    @State private var showingAIQuickAdd = false
     
     var body: some View {
         NavigationStack {
             List {
                 // MARK: — 智能列表
                 Section {
+                    // AI 创建
+                    Button(action: { showingAIQuickAdd = true }) {
+                        HStack(spacing: 14) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing).opacity(0.2))
+                                    .frame(width: 40, height: 40)
+                                Image(systemName: "sparkles")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.blue)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("AI 创建")
+                                    .font(.subheadline.weight(.medium))
+                                Text("自然语言快速添加任务")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    
                     // 今日最佳
                     NavigationLink(destination: TodayView()) {
                         HStack(spacing: 14) {
@@ -164,6 +191,9 @@ struct ListHomeView: View {
             }
             .sheet(isPresented: $showingNewList) {
                 newListSheet
+            }
+            .sheet(isPresented: $showingAIQuickAdd) {
+                AIQuickAddView()
             }
         }
     }
